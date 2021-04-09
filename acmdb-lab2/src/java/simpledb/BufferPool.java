@@ -2,6 +2,7 @@ package simpledb;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -25,7 +26,9 @@ public class BufferPool {
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
 
-    private HashMap<PageId, Page> pid2page;
+    private int pageNum;
+    private final HashMap<PageId, Page> pid2page;
+    private final LinkedList<PageId> lruList;
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -35,6 +38,8 @@ public class BufferPool {
     public BufferPool(int numPages) {
         // some code goes here
 		pid2page = new HashMap<>();
+		lruList = new LinkedList<>();
+		pageNum = numPages;
     }
     
     public static int getPageSize() {
@@ -69,10 +74,16 @@ public class BufferPool {
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
-        if(pid2page.containsKey(pid)) return pid2page.get(pid);
+        if(pid2page.containsKey(pid)){
+        	lruList.remove(pid);
+        	lruList.addLast(pid);
+        	return pid2page.get(pid);
+		}
         else{
         	HeapFile tableFile = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
         	HeapPage newPage = (HeapPage) tableFile.readPage(pid);
+        	if(lruList.size() >= pageNum) evictPage();
+        	lruList.addLast(pid);
         	pid2page.put(pid, newPage);
         	return newPage;
 		}
@@ -170,7 +181,8 @@ public class BufferPool {
     public synchronized void flushAllPages() throws IOException {
         // some code goes here
         // not necessary for lab1
-
+		for (PageId pid : pid2page.keySet())
+			flushPage(pid);
     }
 
     /** Remove the specific page id from the buffer pool.
@@ -193,6 +205,10 @@ public class BufferPool {
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
         // not necessary for lab1
+		HeapPage pageToFlush = (HeapPage) pid2page.get(pid);
+		HeapFile table = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
+		table.writePage(pageToFlush);
+		pageToFlush.markDirty(false, null);
     }
 
     /** Write all pages of the specified transaction to disk.
@@ -209,6 +225,13 @@ public class BufferPool {
     private synchronized  void evictPage() throws DbException {
         // some code goes here
         // not necessary for lab1
+		PageId pageIdToEvict = lruList.pollFirst();
+		try {
+			flushPage(pageIdToEvict);
+		}catch (IOException e){
+			e.printStackTrace();
+		}
+		pid2page.remove(pageIdToEvict);
     }
 
 }
