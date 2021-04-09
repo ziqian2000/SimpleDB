@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="simpledb" default="dist" basedir=".">
-    <property name="src" location="src"/>
+    <property name="src" location="acmdb-lab1/src"/>
     <property name="testd" location="test"/>
 
     <property name="build" location="bin"/>
@@ -8,7 +8,7 @@
     <property name="build.test" location="${build}/test"/>
     <property name="depcache" location="${build}/depcache"/>
 
-    <property name="lib" location="lib"/>
+    <property name="lib" location="acmdb-lab1/lib"/>
     <property name="doc" location="javadoc"/>
     <property name="dist" location="dist"/>
     <property name="jarfile" location="${dist}/${ant.project.name}.jar"/>
@@ -19,21 +19,21 @@
 
     <path id="classpath.base">
         <pathelement location="${build.src}"/>
-        <pathelement location="${lib}/zql.jar"/>
-        <pathelement location="${lib}/jline-0.9.94.jar"/>
-        <pathelement location="${lib}/mina-core-2.0.4.jar"/>
-        <pathelement location="${lib}/mina-filter-compression-2.0.4.jar"/>
-        <pathelement location="${lib}/slf4j-api-1.6.1.jar"/>
-        <pathelement location="${lib}/slf4j-log4j12-1.6.1.jar"/>
-        <pathelement location="${lib}/log4j-1.2.17.jar"/>
-        <pathelement location="${lib}/jzlib-1.0.7.jar"/>
+        <pathelement location="/acmdb-lab1/lib/zql.jar"/>
+        <pathelement location="/acmdb-lab1/lib/jline-0.9.94.jar"/>
+        <pathelement location="/acmdb-lab1/lib/mina-core-2.0.4.jar"/>
+        <pathelement location="/acmdb-lab1/lib/mina-filter-compression-2.0.4.jar"/>
+        <pathelement location="/acmdb-lab1/lib/slf4j-api-1.6.1.jar"/>
+        <pathelement location="/acmdb-lab1/lib/slf4j-log4j12-1.6.1.jar"/>
+        <pathelement location="/acmdb-lab1/lib/log4j-1.2.17.jar"/>
+        <pathelement location="/acmdb-lab1/lib/jzlib-1.0.7.jar"/>
     </path>
 
     <path id="classpath.test">
         <path refid="classpath.base"/>
         <pathelement location="${build.test}"/>
-        <pathelement location="${lib}/junit-4.5.jar"/>
-        <pathelement location="${lib}/javassist-3.16.1-GA.jar"/>
+        <pathelement location="/acmdb-lab1/lib/junit-4.5.jar"/>
+        <pathelement location="/acmdb-lab1/lib/javassist-3.16.1-GA.jar"/>
     </path>
     <!-- Common macro for compiling Java source -->
     <macrodef name="Compile">
@@ -70,7 +70,7 @@
 
     <taskdef resource="net/sf/antcontrib/antlib.xml">
         <classpath>
-            <pathelement location="lib/ant-contrib-1.0b3.jar"/>
+            <pathelement location="acmdb-lab1/lib/ant-contrib-1.0b3.jar"/>
         </classpath>
     </taskdef>
 
@@ -100,61 +100,61 @@
     &lt;classpathentry kind=&quot;con&quot; path=&quot;org.eclipse.jdt.launching.JRE_CONTAINER&quot;/&gt;
     &lt;classpathentry kind=&quot;output&quot; path=&quot;bin/src&quot;/&gt;
     </echo>
-    <if> <available file="${lib}/junit-4.5.jar" /> <then>
+    <if> <available file="/acmdb-lab1/lib/junit-4.5.jar" /> <then>
             <echo file=".classpath" append="true">
                 &lt;classpathentry kind=&quot;lib&quot; path=&quot;lib/junit-4.5.jar&quot;/&gt;
             </echo>
         </then>
     </if>
-    <if> <available file="${lib}/jline-0.9.94.jar" /> <then>
+    <if> <available file="/acmdb-lab1/lib/jline-0.9.94.jar" /> <then>
             <echo file=".classpath" append="true">
                 &lt;classpathentry kind=&quot;lib&quot; path=&quot;lib/jline-0.9.94.jar&quot;/&gt;
             </echo>
         </then>
     </if>
-    <if> <available file="${lib}/zql.jar" /> <then>
+    <if> <available file="/acmdb-lab1/lib/zql.jar" /> <then>
             <echo file=".classpath" append="true">
                 &lt;classpathentry kind=&quot;lib&quot; path=&quot;lib/zql.jar&quot;/&gt;
             </echo>
         </then>
     </if>
-    <if> <available file="${lib}/mina-core-2.0.4.jar" />    <then>
+    <if> <available file="/acmdb-lab1/lib/mina-core-2.0.4.jar" />    <then>
             <echo file=".classpath" append="true">
                 &lt;classpathentry kind=&quot;lib&quot; path=&quot;lib/mina-core-2.0.4.jar&quot;/&gt;
             </echo>
         </then>
     </if>
-    <if> <available file="${lib}/mina-filter-compression-2.0.4.jar" /> <then>
+    <if> <available file="/acmdb-lab1/lib/mina-filter-compression-2.0.4.jar" /> <then>
             <echo file=".classpath" append="true">
                 &lt;classpathentry kind=&quot;lib&quot; path=&quot;lib/mina-filter-compression-2.0.4.jar&quot;/&gt;
             </echo>
         </then>
     </if>
-    <if> <available file="${lib}/jzlib-1.0.7.jar" /> <then>
+    <if> <available file="/acmdb-lab1/lib/jzlib-1.0.7.jar" /> <then>
             <echo file=".classpath" append="true">
                 &lt;classpathentry kind=&quot;lib&quot; path=&quot;lib/jzlib-1.0.7.jar&quot;/&gt;
             </echo>
         </then>
     </if>
-    <if> <available file="${lib}/slf4j-api-1.6.1.jar" /> <then>
+    <if> <available file="/acmdb-lab1/lib/slf4j-api-1.6.1.jar" /> <then>
             <echo file=".classpath" append="true">
                 &lt;classpathentry kind=&quot;lib&quot; path=&quot;lib/slf4j-api-1.6.1.jar&quot;/&gt;
             </echo>
         </then>
     </if>
-    <if> <available file="${lib}/slf4j-log4j12-1.6.1.jar" /> <then>
+    <if> <available file="/acmdb-lab1/lib/slf4j-log4j12-1.6.1.jar" /> <then>
             <echo file=".classpath" append="true">
                 &lt;classpathentry kind=&quot;lib&quot; path=&quot;lib/slf4j-log4j12-1.6.1.jar&quot;/&gt;
             </echo>
         </then>
     </if>
-    <if> <available file="${lib}/log4j-1.2.17.jar" /> <then>
+    <if> <available file="/acmdb-lab1/lib/log4j-1.2.17.jar" /> <then>
             <echo file=".classpath" append="true">
                 &lt;classpathentry kind=&quot;lib&quot; path=&quot;lib/log4j-1.2.17.jar&quot;/&gt;
             </echo>
         </then>
     </if>
-    <if> <available file="${lib}/javassist-3.16.1-GA.jar" /> <then>
+    <if> <available file="/acmdb-lab1/lib/javassist-3.16.1-GA.jar" /> <then>
             <echo file=".classpath" append="true">
                 &lt;classpathentry kind=&quot;lib&quot; path=&quot;lib/javassist-3.16.1-GA.jar&quot;/&gt;
             </echo>
@@ -170,7 +170,7 @@
             <classpath refid="classpath.base"/>
         </Compile>
     <copy todir="${build}" flatten="true">
-        <fileset dir="${src}">
+        <fileset dir="/">
             <include name="bin/*.sh"/>
         </fileset>
     </copy>
@@ -179,7 +179,7 @@
     <target name="javadocs" description="Build javadoc documentation">
         <javadoc destdir="${doc}" access="private" failonerror="true" source="${sourceversion}" additionalparam="-Xdoclint:none">
             <classpath refid="classpath.base" />
-            <fileset dir="src/java" defaultexcludes="yes">
+            <fileset dir="acmdb-lab1/src/java" defaultexcludes="yes">
                 <include name="simpledb/**/*.java"/>
             </fileset>
         </javadoc>
