@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="simpledb" default="dist" basedir=".">
-    <property name="src" location="acmdb-lab1/src"/>
+<project name="simpledb" default="dist" basedir="..">
+    <property name="src" location="src"/>
     <property name="testd" location="test"/>
 
-    <property name="build" location="bin"/>
+    <property name="build" location="../bin"/>
     <property name="build.src" location="${build}/src"/>
     <property name="build.test" location="${build}/test"/>
     <property name="depcache" location="${build}/depcache"/>
 
-    <property name="lib" location="acmdb-lab1/lib"/>
+    <property name="lib" location="lib"/>
     <property name="doc" location="javadoc"/>
     <property name="dist" location="dist"/>
     <property name="jarfile" location="${dist}/${ant.project.name}.jar"/>
@@ -70,7 +70,7 @@
 
     <taskdef resource="net/sf/antcontrib/antlib.xml">
         <classpath>
-            <pathelement location="acmdb-lab1/lib/ant-contrib-1.0b3.jar"/>
+            <pathelement location="lib/ant-contrib-1.0b3.jar"/>
         </classpath>
     </taskdef>
 
@@ -169,7 +169,7 @@
         <Compile srcdir="${src}/java" destdir="${build.src}">
             <classpath refid="classpath.base"/>
         </Compile>
-    <copy todir="${build}" flatten="true">
+    <copy todir="/bin" flatten="true">
         <fileset dir="/">
             <include name="bin/*.sh"/>
         </fileset>
@@ -179,7 +179,7 @@
     <target name="javadocs" description="Build javadoc documentation">
         <javadoc destdir="${doc}" access="private" failonerror="true" source="${sourceversion}" additionalparam="-Xdoclint:none">
             <classpath refid="classpath.base" />
-            <fileset dir="acmdb-lab1/src/java" defaultexcludes="yes">
+            <fileset dir="src/java" defaultexcludes="yes">
                 <include name="simpledb/**/*.java"/>
             </fileset>
         </javadoc>
@@ -297,10 +297,10 @@
     <target name="handin" depends="clean"
         description="Create a tarball of your code to hand in">
         <tar destfile="lab-handin.tar.bz2" compression="bzip2"
-            basedir="." />
+            basedir=".." />
         <echo message="Tarball created!  Please submit 'lab-handin.tar.bz2' per the instructions in the lab document." />
     <subant target="dist">
-        <fileset dir="." includes="build.xml"/>
+        <fileset dir=".." includes="build.xml"/>
     </subant>
     </target>
 
