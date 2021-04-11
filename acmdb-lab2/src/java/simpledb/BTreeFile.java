@@ -196,7 +196,26 @@ public class BTreeFile implements DbFile {
 			Field f) 
 					throws DbException, TransactionAbortedException {
 		// some code goes here
-        return null;
+        if(pid.pgcateg() == BTreePageId.LEAF) return (BTreeLeafPage) getPage(tid, dirtypages, pid, perm);
+        else if(pid.pgcateg() == BTreePageId.INTERNAL){
+			BTreeInternalPage internalPage = (BTreeInternalPage) getPage(tid, dirtypages, pid, Permissions.READ_ONLY);
+			Iterator<BTreeEntry> iter = internalPage.iterator();
+			if(f == null){
+				return findLeafPage(tid, dirtypages, iter.next().getLeftChild(), perm, null);
+			}
+			else{
+				BTreeEntry curEntry = null;
+				while(iter.hasNext()){
+					curEntry = iter.next();
+					IndexPredicate fieldPredicate = new IndexPredicate(Op.LESS_THAN_OR_EQ, f);
+					if(fieldPredicate.equals(new IndexPredicate(Op.LESS_THAN_OR_EQ, curEntry.getKey())))
+						return findLeafPage(tid, dirtypages, curEntry.getLeftChild(), perm, f);
+				}
+				assert curEntry != null;
+				return findLeafPage(tid, dirtypages, curEntry.getRightChild(), perm, f);
+			}
+		}
+        else throw new DbException("Unexpected pid, which is neither a leaf page nor an internal one.");
 	}
 	
 	/**
