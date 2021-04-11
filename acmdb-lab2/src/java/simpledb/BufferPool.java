@@ -1,6 +1,7 @@
 package simpledb;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 
@@ -80,8 +81,8 @@ public class BufferPool {
         	return pid2page.get(pid);
 		}
         else{
-        	HeapFile tableFile = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
-        	HeapPage newPage = (HeapPage) tableFile.readPage(pid);
+        	DbFile tableFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
+        	Page newPage = tableFile.readPage(pid);
         	if(lruList.size() >= pageNum) evictPage();
         	lruList.addLast(pid);
         	pid2page.put(pid, newPage);
@@ -152,6 +153,23 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+
+		DbFile file = Database.getCatalog().getDatabaseFile(tableId);
+		ArrayList<Page> dirtyPages = file.insertTuple(tid, t);
+
+		for(Page page : dirtyPages){
+
+			PageId pid = page.getId();
+			if(pid2page.containsKey(pid))
+				lruList.remove(pid);
+			else
+				if(lruList.size() >= pageNum) evictPage();
+			lruList.addLast(pid);
+			pid2page.put(pid, page);
+
+			page.markDirty(true, tid);
+		}
+
     }
 
     /**
@@ -205,8 +223,8 @@ public class BufferPool {
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
         // not necessary for lab1
-		HeapPage pageToFlush = (HeapPage) pid2page.get(pid);
-		HeapFile table = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
+		Page pageToFlush = pid2page.get(pid);
+		DbFile table = Database.getCatalog().getDatabaseFile(pid.getTableId());
 		table.writePage(pageToFlush);
 		pageToFlush.markDirty(false, null);
     }

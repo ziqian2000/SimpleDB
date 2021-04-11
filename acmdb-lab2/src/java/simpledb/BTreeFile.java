@@ -267,8 +267,49 @@ public class BTreeFile implements DbFile {
 		// the new entry.  getParentWithEmtpySlots() will be useful here.  Don't forget to update
 		// the sibling pointers of all the affected leaf pages.  Return the page into which a 
 		// tuple with the given key field should be inserted.
-        return null;
-		
+		// create a new internal page
+
+		BTreeLeafPage newLeafPage = (BTreeLeafPage) getEmptyPage(tid, dirtypages, BTreePageId.LEAF);
+
+		// move entries : page -> newLeafPage
+		int nbEntriesToMove = page.getNumTuples() / 2;
+		Iterator<Tuple> tupleIterator = page.reverseIterator();
+		for(int i = 0; i < nbEntriesToMove; i++){
+			Tuple tuple = tupleIterator.next();
+			page.deleteTuple(tuple);
+			newLeafPage.insertTuple(tuple);
+		}
+
+		// push up index
+		Tuple tupleToPushUp = tupleIterator.next();
+		BTreeEntry entryToPushUp = new BTreeEntry(tupleToPushUp.getField(keyField), page.getId(), newLeafPage.getId());
+		BTreeInternalPage newParentPage = getParentWithEmptySlots(tid, dirtypages, page.getParentId(), entryToPushUp.getKey());
+		newParentPage.insertEntry(entryToPushUp);
+
+		// mark
+		dirtypages.put(page.getId(), page);
+		dirtypages.put(newLeafPage.getId(), newLeafPage);
+		dirtypages.put(newParentPage.getId(), newParentPage);
+
+		// maintain tree structure
+		page.setParentId(newParentPage.getId());
+		newLeafPage.setParentId(newParentPage.getId());
+
+		// maintain sibling
+		newLeafPage.setLeftSiblingId(page.getId());
+		if(page.getRightSiblingId() != null){
+			newLeafPage.setRightSiblingId(page.getRightSiblingId());
+			BTreeLeafPage rightSibling = (BTreeLeafPage) getPage(tid, dirtypages, page.getRightSiblingId(), Permissions.READ_WRITE);
+			dirtypages.put(page.getRightSiblingId(), rightSibling);
+			rightSibling.setLeftSiblingId(newLeafPage.getId());
+		}
+		page.setRightSiblingId(newLeafPage.getId());
+
+		// return
+		IndexPredicate fieldPredicate = new IndexPredicate(Op.LESS_THAN_OR_EQ, field);
+		return fieldPredicate.equals(new IndexPredicate(Op.LESS_THAN_OR_EQ, entryToPushUp.getKey()))
+				? page
+				: newLeafPage;
 	}
 	
 	/**
@@ -297,7 +338,43 @@ public class BTreeFile implements DbFile {
 			BTreeInternalPage page, Field field) 
 					throws DbException, IOException, TransactionAbortedException {
 		// some code goes here
-		return null;
+
+		// create a new internal page
+		BTreeInternalPage newInternalPage = (BTreeInternalPage) getEmptyPage(tid, dirtypages, BTreePageId.INTERNAL);
+
+		// move entries : page -> newInternalPage
+		int nbEntriesToMove = (page.getNumEntries() - 1) / 2;
+		Iterator<BTreeEntry> entryIterator = page.reverseIterator();
+		for(int i = 0; i < nbEntriesToMove; i++){
+			BTreeEntry entry = entryIterator.next();
+			page.deleteKeyAndRightChild(entry);
+			newInternalPage.insertEntry(entry);
+		}
+
+		// push up index
+		BTreeEntry entryToMove = entryIterator.next();
+		BTreeEntry entryToPushUp = new BTreeEntry(entryToMove.getKey(), page.getId(), newInternalPage.getId());
+		page.deleteKeyAndRightChild(entryToMove);
+		BTreeInternalPage newParentPage = getParentWithEmptySlots(tid, dirtypages, page.getParentId(), entryToPushUp.getKey());
+		newParentPage.insertEntry(entryToPushUp);
+
+		// mark
+		dirtypages.put(page.getId(), page);
+		dirtypages.put(newInternalPage.getId(), newInternalPage);
+		dirtypages.put(newParentPage.getId(), newParentPage);
+
+		// maintain tree structure
+		page.setParentId(newParentPage.getId());
+		updateParentPointers(tid, dirtypages, page);
+		newInternalPage.setParentId(newParentPage.getId());
+		updateParentPointers(tid, dirtypages, newInternalPage);
+
+		// return
+		IndexPredicate fieldPredicate = new IndexPredicate(Op.LESS_THAN_OR_EQ, field);
+		return fieldPredicate.equals(new IndexPredicate(Op.LESS_THAN_OR_EQ, entryToPushUp.getKey()))
+				? page
+				: newInternalPage;
+
 	}
 	
 	/**
@@ -541,7 +618,7 @@ public class BTreeFile implements DbFile {
 	 * @throws TransactionAbortedException
 	 */
 	private void handleMinOccupancyLeafPage(TransactionId tid, HashMap<PageId, Page> dirtypages, BTreeLeafPage page, 
-			BTreeInternalPage parent, BTreeEntry leftEntry, BTreeEntry rightEntry) 
+			BTreeInternalPage parent, BTreeEntry leftEntry, BTreeEntry rightEntry)
 			throws DbException, IOException, TransactionAbortedException {
 		BTreePageId leftSiblingId = null;
 		BTreePageId rightSiblingId = null;
@@ -615,7 +692,7 @@ public class BTreeFile implements DbFile {
 	 * @throws TransactionAbortedException
 	 */
 	private void handleMinOccupancyInternalPage(TransactionId tid, HashMap<PageId, Page> dirtypages, 
-			BTreeInternalPage page, BTreeInternalPage parent, BTreeEntry leftEntry, BTreeEntry rightEntry) 
+			BTreeInternalPage page, BTreeInternalPage parent, BTreeEntry leftEntry, BTreeEntry rightEntry)
 					throws DbException, IOException, TransactionAbortedException {
 		BTreePageId leftSiblingId = null;
 		BTreePageId rightSiblingId = null;
@@ -718,7 +795,7 @@ public class BTreeFile implements DbFile {
 	 * @throws TransactionAbortedException
 	 */
 	protected void mergeLeafPages(TransactionId tid, HashMap<PageId, Page> dirtypages, 
-			BTreeLeafPage leftPage, BTreeLeafPage rightPage, BTreeInternalPage parent, BTreeEntry parentEntry) 
+			BTreeLeafPage leftPage, BTreeLeafPage rightPage, BTreeInternalPage parent, BTreeEntry parentEntry)
 					throws DbException, IOException, TransactionAbortedException {
 
 		// some code goes here
@@ -750,7 +827,7 @@ public class BTreeFile implements DbFile {
 	 * @throws TransactionAbortedException
 	 */
 	protected void mergeInternalPages(TransactionId tid, HashMap<PageId, Page> dirtypages, 
-			BTreeInternalPage leftPage, BTreeInternalPage rightPage, BTreeInternalPage parent, BTreeEntry parentEntry) 
+			BTreeInternalPage leftPage, BTreeInternalPage rightPage, BTreeInternalPage parent, BTreeEntry parentEntry)
 					throws DbException, IOException, TransactionAbortedException {
 		
 		// some code goes here
@@ -781,7 +858,7 @@ public class BTreeFile implements DbFile {
 	 * @throws TransactionAbortedException
 	 */
 	private void deleteParentEntry(TransactionId tid, HashMap<PageId, Page> dirtypages, 
-			BTreePage leftPage, BTreeInternalPage parent, BTreeEntry parentEntry) 
+			BTreePage leftPage, BTreeInternalPage parent, BTreeEntry parentEntry)
 					throws DbException, IOException, TransactionAbortedException {		
 		
 		// delete the entry in the parent.  If
