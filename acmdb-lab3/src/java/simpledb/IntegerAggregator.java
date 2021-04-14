@@ -1,11 +1,31 @@
 package simpledb;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 /**
  * Knows how to compute some aggregate over a set of IntFields.
  */
 public class IntegerAggregator implements Aggregator {
 
     private static final long serialVersionUID = 1L;
+
+	private int aggField;
+	private int groupByField;
+	private Type aggType;
+	private Type groupByType;
+
+	private Aggregator.Op aggOp;
+	private TupleDesc resTupleDesc;
+
+	private HashMap<Field, Integer> countMap;
+	private HashMap<Field, Integer> resultMap;
+	private int count;
+	private int result;
 
     /**
      * Aggregate constructor
@@ -24,6 +44,12 @@ public class IntegerAggregator implements Aggregator {
 
     public IntegerAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
         // some code goes here
+		this.groupByField = gbfield;
+		this.groupByType = gbfieldtype;
+		this.aggField = afield;
+		this.aggOp = what;
+		this.countMap = new HashMap<>();
+		this.resultMap = new HashMap<>();
     }
 
     /**
@@ -35,6 +61,75 @@ public class IntegerAggregator implements Aggregator {
      */
     public void mergeTupleIntoGroup(Tuple tup) {
         // some code goes here
+
+		aggType = tup.getField(aggField).getType();
+
+		Type[] type;
+		String[] name;
+		if(this.groupByField == Aggregator.NO_GROUPING){
+			type = new Type[1];
+			name = new String[1];
+			type[0] = this.aggOp == Aggregator.Op.COUNT ? Type.INT_TYPE : aggType;
+			name[0] = tup.getTupleDesc().getFieldName(aggField);
+		}
+		else{
+			type = new Type[2];
+			name = new String[2];
+			type[0] = groupByType;
+			name[0] = tup.getTupleDesc().getFieldName(groupByField);
+			type[1] = this.aggOp == Aggregator.Op.COUNT ? Type.INT_TYPE : aggType;
+			name[1] = tup.getTupleDesc().getFieldName(aggField);
+		}
+		this.resTupleDesc = new TupleDesc(type, name);
+
+		int aggVal = ((IntField)tup.getField(aggField)).getValue();
+		if(groupByField == NO_GROUPING){
+			count += 1;
+			switch (aggOp) {
+				case MIN:
+					result = min(result, aggVal);
+					break;
+				case MAX:
+					result = max(result, aggVal);
+					break;
+				case SUM:
+				case AVG:
+					result += aggVal;
+					break;
+				case COUNT:
+					result = count;
+					break;
+			}
+		}
+		else{
+			Field groupByVal = tup.getField(groupByField);
+
+			if(!countMap.containsKey(groupByVal)) countMap.put(groupByVal, 0);
+			countMap.put(groupByVal, countMap.get(groupByVal) + 1);
+
+			if(!resultMap.containsKey(groupByVal)) resultMap.put(groupByVal, aggVal);
+			else{
+				int tmp = resultMap.get(groupByVal);
+				switch (aggOp) {
+					case MIN:
+						resultMap.put(groupByVal, min(tmp, aggVal));
+						break;
+					case MAX:
+						resultMap.put(groupByVal, max(tmp, aggVal));
+						break;
+					case SUM:
+					case AVG:
+						resultMap.put(groupByVal, tmp + aggVal);
+						break;
+					case COUNT:
+						resultMap.put(groupByVal, countMap.get(groupByVal));
+						break;
+					default:
+						assert false;
+				}
+			}
+
+		}
     }
 
     /**
@@ -47,8 +142,30 @@ public class IntegerAggregator implements Aggregator {
      */
     public DbIterator iterator() {
         // some code goes here
-        throw new
-        UnsupportedOperationException("please implement me for lab3");
+		ArrayList<Tuple> tupleList = new ArrayList<>();
+
+		if(groupByField == NO_GROUPING){
+			Tuple tuple = new Tuple(resTupleDesc);
+			if(aggOp == Op.AVG)
+				tuple.setField(0, new IntField(result / count));
+			else
+				tuple.setField(0, new IntField(result));
+			tupleList.add(tuple);
+		}
+		else{
+			for (Map.Entry<Field, Integer> entry : this.resultMap.entrySet())
+			{
+				Tuple tuple = new Tuple(this.resTupleDesc);
+				tuple.setField(0, entry.getKey());
+				if (this.aggOp == Op.AVG)
+					tuple.setField(1, new IntField(entry.getValue() / this.countMap.get(entry.getKey())));
+				else
+					tuple.setField(1, new IntField(entry.getValue()));
+				tupleList.add(tuple);
+			}
+		}
+
+		return new TupleIterator(resTupleDesc, tupleList);
     }
 
 }
