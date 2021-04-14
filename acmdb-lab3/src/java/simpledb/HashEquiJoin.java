@@ -9,6 +9,15 @@ public class HashEquiJoin extends Operator {
 
     private static final long serialVersionUID = 1L;
 
+	private final JoinPredicate predicate;
+	private DbIterator child1;
+	private DbIterator child2;
+	private final int lenTuple1;
+	private final int lenTuple2;
+	private final ArrayList<Tuple> joinedArray;
+	private Iterator<Tuple> joinedIter;
+	private final TupleDesc joinedTupleDesc;
+	private HashMap<Field, ArrayList<Tuple>> child2HashMap;
     /**
      * Constructor. Accepts to children to join and the predicate to join them
      * on
@@ -21,42 +30,84 @@ public class HashEquiJoin extends Operator {
      *            Iterator for the right(inner) relation to join
      */
     public HashEquiJoin(JoinPredicate p, DbIterator child1, DbIterator child2) {
-        // some code goes here
+		// some code goes here
+		this.predicate = p;
+		this.child1 = child1;
+		this.child2 = child2;
+		this.lenTuple1 = child1.getTupleDesc().numFields();
+		this.lenTuple2 = child2.getTupleDesc().numFields();
+		this.joinedTupleDesc = TupleDesc.merge(child1.getTupleDesc(), child2.getTupleDesc());
+		this.joinedArray = new ArrayList<>();
+		this.joinedIter = null;
     }
 
     public JoinPredicate getJoinPredicate() {
         // some code goes here
-        return null;
+        return predicate;
     }
 
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return null;
+        return joinedTupleDesc;
     }
     
     public String getJoinField1Name()
     {
         // some code goes here
-	return null;
+		return child1.getTupleDesc().getFieldName(predicate.getField1());
     }
 
     public String getJoinField2Name()
     {
         // some code goes here
-        return null;
+		return child2.getTupleDesc().getFieldName(predicate.getField2());
     }
     
     public void open() throws DbException, NoSuchElementException,
             TransactionAbortedException {
         // some code goes here
+		super.open();
+		child1.open();
+		child2.open();
+		child2HashMap = new HashMap<>();
+		int child1Idx = this.predicate.getField1();
+		int child2Idx = this.predicate.getField2();
+		while(child2.hasNext()){
+			Tuple tuple = child2.next();
+			Field field = tuple.getField(child2Idx);
+			if(!child2HashMap.containsKey(field)) child2HashMap.put(field, new ArrayList<>());
+			child2HashMap.get(field).add(tuple);
+		}
+		while(child1.hasNext()){
+			Tuple tuple1 = child1.next();
+			Field field1 = tuple1.getField(child1Idx);
+			for(Field field2 : child2HashMap.keySet()){
+				Tuple example_tuple2 = child2HashMap.get(field2).iterator().next();
+				if(predicate.filter(tuple1, example_tuple2)){
+					for (Tuple tuple2 : child2HashMap.get(field2)) {
+						Tuple joinedTuple = new Tuple(joinedTupleDesc);
+						for (int i = 0; i < lenTuple1; i++) joinedTuple.setField(i, tuple1.getField(i));
+						for (int i = 0; i < lenTuple2; i++) joinedTuple.setField(i + lenTuple1, tuple2.getField(i));
+						joinedArray.add(joinedTuple);
+					}
+				}
+			}
+		}
+		joinedIter = joinedArray.iterator();
     }
 
     public void close() {
         // some code goes here
+		super.close();
+		child1.close();
+		child2.close();
+		joinedArray.clear();
+		joinedIter = null;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
         // some code goes here
+		joinedIter = joinedArray.iterator();
     }
 
     transient Iterator<Tuple> listIt = null;
@@ -81,18 +132,23 @@ public class HashEquiJoin extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+        return joinedIter.hasNext() ? joinedIter.next() : null;
     }
 
     @Override
     public DbIterator[] getChildren() {
         // some code goes here
-        return null;
+		DbIterator[] arr = new DbIterator[2];
+		arr[0] = child1;
+		arr[1] = child2;
+		return arr;
     }
 
     @Override
     public void setChildren(DbIterator[] children) {
         // some code goes here
+		child1 = children[0];
+		child2 = children[1];
     }
     
 }

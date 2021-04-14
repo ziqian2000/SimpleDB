@@ -113,6 +113,6 @@ public class Predicate implements Serializable {
      */
     public String toString() {
         // some code goes here
-        return "";
+        return String.format("f = %d op = %s operand = %s", this.field, this.op.toString(), this.operand.toString());
     }
 }
