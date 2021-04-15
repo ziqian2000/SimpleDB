@@ -49,17 +49,18 @@ public class Aggregate extends Operator {
 		this.aggOp = aop;
 
 		this.aggType = this.childIter.getTupleDesc().getFieldType(this.aggField);
-		this.groupByType = this.childIter.getTupleDesc().getFieldType(this.groupByField);
 
 		Type[] type;
 		String[] name;
 		if(this.groupByField == Aggregator.NO_GROUPING){
+			this.groupByType = null;
 			type = new Type[1];
 			name = new String[1];
 			type[0] = this.aggOp == Aggregator.Op.COUNT ? Type.INT_TYPE : aggType;
 			name[0] = this.childIter.getTupleDesc().getFieldName(aggField);
 		}
 		else{
+			this.groupByType = this.childIter.getTupleDesc().getFieldType(this.groupByField);
 			type = new Type[2];
 			name = new String[2];
 			type[0] = groupByType;

@@ -14,16 +14,15 @@ public class IntegerAggregator implements Aggregator {
 
     private static final long serialVersionUID = 1L;
 
-	private int aggField;
-	private int groupByField;
-	private Type aggType;
-	private Type groupByType;
+	private final int aggField;
+	private final int groupByField;
+	private final Type groupByType;
 
-	private Aggregator.Op aggOp;
+	private final Aggregator.Op aggOp;
 	private TupleDesc resTupleDesc;
 
-	private HashMap<Field, Integer> countMap;
-	private HashMap<Field, Integer> resultMap;
+	private final HashMap<Field, Integer> countMap;
+	private final HashMap<Field, Integer> resultMap;
 	private int count;
 	private int result;
 
@@ -62,7 +61,7 @@ public class IntegerAggregator implements Aggregator {
     public void mergeTupleIntoGroup(Tuple tup) {
         // some code goes here
 
-		aggType = tup.getField(aggField).getType();
+		Type aggType = tup.getField(aggField).getType();
 
 		Type[] type;
 		String[] name;
@@ -158,7 +157,7 @@ public class IntegerAggregator implements Aggregator {
 				Tuple tuple = new Tuple(this.resTupleDesc);
 				tuple.setField(0, entry.getKey());
 				if (this.aggOp == Op.AVG)
-					tuple.setField(1, new IntField(entry.getValue() / this.countMap.get(entry.getKey())));
+					tuple.setField(1, new IntField(entry.getValue() / countMap.get(entry.getKey())));
 				else
 					tuple.setField(1, new IntField(entry.getValue()));
 				tupleList.add(tuple);
