@@ -22,6 +22,8 @@ public class HeapPage implements Page {
     byte[] oldData;
     private final Byte oldDataLock=new Byte((byte)0);
 
+    private TransactionId dirtier;
+
     /**
      * Create a HeapPage from a set of bytes of data read from disk.
      * The format of a HeapPage is a set of header bytes indicating
@@ -244,6 +246,12 @@ public class HeapPage implements Page {
     public void deleteTuple(Tuple t) throws DbException {
         // some code goes here
         // not necessary for lab1
+		RecordId recordId = t.getRecordId();
+		if(recordId.getPageId() != getId())
+			throw new DbException("The tuple is not on this page.");
+		if(!isSlotUsed(recordId.tupleno()))
+			throw new DbException("The tuple slot is already empty.");
+		markSlotUsed(recordId.tupleno(), false);
     }
 
     /**
@@ -256,6 +264,15 @@ public class HeapPage implements Page {
     public void insertTuple(Tuple t) throws DbException {
         // some code goes here
         // not necessary for lab1
+		for(int i = 0; i < numSlots; i++){
+			if(!isSlotUsed(i)){
+				tuples[i] = t;
+				markSlotUsed(i, true);
+				t.setRecordId(new RecordId(pid, i));
+				return;
+			}
+		}
+		throw new DbException("Try to insert a tuple into full heap page.");
     }
 
     /**
@@ -265,6 +282,8 @@ public class HeapPage implements Page {
     public void markDirty(boolean dirty, TransactionId tid) {
         // some code goes here
 	// not necessary for lab1
+		if(dirty) dirtier = tid;
+		else dirtier = null;
     }
 
     /**
@@ -273,7 +292,7 @@ public class HeapPage implements Page {
     public TransactionId isDirty() {
         // some code goes here
 	// Not necessary for lab1
-        return null;      
+        return dirtier;
     }
 
     /**
@@ -302,6 +321,8 @@ public class HeapPage implements Page {
     private void markSlotUsed(int i, boolean value) {
         // some code goes here
         // not necessary for lab1
+		if(value) header[i / 8] |=  1 << (i % 8);
+		else header[i / 8] &= ~(1 << (i % 8));
     }
 
     /**
