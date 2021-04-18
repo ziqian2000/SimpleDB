@@ -1,12 +1,11 @@
-# SimpleDB Lab-2 Doc
+# SimpleDB Lab-3 Doc
 
-- Exercise 1: we implement the LRU eviction policy, achieved by a `LinkedList`.
-- Exercise 2: the `findLeafPage` is implemented by recursively comparing the keys in internal pages with the given value, and calling the child trees.
-- Exercise 3: for insertion, the crucial thing is splitting. When splitting, we first create a new page into which half of entries in the full page will be poured. Then we push up some necessary information to the parent page, and finally maintain the tree structure.
-- Exercise 4: for deletion, when stealing for an internal page, we first pull down the parent's entry, and then "rotate" needed entries. When stealing for a leaf page, we simply move the entries.
-- Exercise 5: analogous to exercise 4. It is worth paying attention to whether we should first pull down the parent' entry and then move the needed entries.
+- Exercise 1: I implement those operators following their definitions. For `join`, I use the nested loops. Basically, there is nothing to say.
+- Exercise 2: I apply the given aggregation to tuples one by one and save the results. There is not much to say.
+- Exercise 3: to insert, I simply find an empty slot and then place the tuple there. To delete, I first locate the tuple using `RecordId` and then remove this tuple.  
+- Exercise 4: I believe something mysterious will happen if I do insertion and deletion while going through the given iterator. Therefore, I just store all data produced by the iterator into an array before doing any modification (insertion or deletion).
 
 I did not make any essential changes to the API in this lab.
 
-I spent approximately two days on it. I do not think there is any trouble here.
+I spent approximately three days on it. I do not find any extreme trouble here.
 
