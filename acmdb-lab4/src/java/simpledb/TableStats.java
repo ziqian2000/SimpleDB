@@ -1,5 +1,6 @@
 package simpledb;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -70,9 +71,9 @@ public class TableStats {
     private int tableid;
     private int numTuples;
     private int numPages;
-    private HashMap<Integer, Object> histograms;
-	private HashMap<Integer, Integer> minVal;
-	private HashMap<Integer, Integer> maxVal;
+    private ArrayList<Object> histograms;
+	private ArrayList<Integer> minVal;
+	private ArrayList<Integer> maxVal;
 
     /**
      * Create a new TableStats object, that keeps track of statistics on each
@@ -99,16 +100,14 @@ public class TableStats {
 		DbFile dbFile = Database.getCatalog().getDatabaseFile(tableid);
 		DbFileIterator iter = dbFile.iterator(new TransactionId());
 		this.numPages = dbFile.numPages();
-		this.histograms = new HashMap<>();
-		this.minVal = new HashMap<>();
-		this.maxVal = new HashMap<>();
+		this.histograms = new ArrayList<>();
+		this.minVal = new ArrayList<>();
+		this.maxVal = new ArrayList<>();
 
 		try {
 			for(int i = 0; i < tupleDesc.numFields(); i++){
-				if(tupleDesc.getFieldType(i) == Type.INT_TYPE){
-					minVal.put(i, Integer.MAX_VALUE);
-					maxVal.put(i, Integer.MIN_VALUE);
-				}
+				minVal.add(Integer.MAX_VALUE);
+				maxVal.add(Integer.MAX_VALUE);
 			}
 			iter.open();
 			while(iter.hasNext()){
@@ -117,20 +116,21 @@ public class TableStats {
 				for(int i = 0; i < tupleDesc.numFields(); i++){
 					if(tupleDesc.getFieldType(i) == Type.INT_TYPE){
 						int val = ((IntField) tuple.getField(i)).getValue();
-						minVal.put(i, Math.min(minVal.get(i), val));
-						maxVal.put(i, Math.max(maxVal.get(i), val));
+						minVal.set(i, Math.min(minVal.get(i), val));
+						maxVal.set(i, Math.max(maxVal.get(i), val));
 					}
 				}
 			}
 			for(int i = 0; i < tupleDesc.numFields(); i++){
 				if(tupleDesc.getFieldType(i) == Type.INT_TYPE){
 					IntHistogram intHistogram = new IntHistogram(NUM_HIST_BINS, minVal.get(i), maxVal.get(i));
-					this.histograms.put(i, intHistogram);
+					this.histograms.add(intHistogram);
 				}
 				else if(tupleDesc.getFieldType(i) == Type.STRING_TYPE){
 					StringHistogram stringHistogram = new StringHistogram(NUM_HIST_BINS);
-					this.histograms.put(i, stringHistogram);
+					this.histograms.add(stringHistogram);
 				}
+				else this.histograms.add(null);
 			}
 			iter.rewind();
 			while(iter.hasNext()){
@@ -213,8 +213,8 @@ public class TableStats {
      */
     public double estimateSelectivity(int field, Predicate.Op op, Field constant) {
         // some code goes here
-        assert histograms.containsKey(field);
         Object histogram = histograms.get(field);
+        assert histogram != null;
         if(histogram instanceof IntHistogram)
         	return ((IntHistogram) histogram).estimateSelectivity(op, ((IntField)constant).getValue());
         else
