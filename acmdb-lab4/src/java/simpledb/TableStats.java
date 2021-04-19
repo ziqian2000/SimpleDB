@@ -107,7 +107,7 @@ public class TableStats {
 		try {
 			for(int i = 0; i < tupleDesc.numFields(); i++){
 				minVal.add(Integer.MAX_VALUE);
-				maxVal.add(Integer.MAX_VALUE);
+				maxVal.add(Integer.MIN_VALUE);
 			}
 			iter.open();
 			while(iter.hasNext()){
