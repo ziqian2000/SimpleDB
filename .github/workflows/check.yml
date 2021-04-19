@@ -1,0 +1,24 @@
+name: Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-16.04
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK
+      uses: actions/setup-java@v2
+      with:
+        java-version: '8'
+        distribution: 'adopt'
+    - name: Install dependency
+      run: sudo apt update && sudo apt install openjdk-8-jdk && sudo apt install ant
+    - name: Run test and system test
+      run: export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8 && cd acmdb-lab2 && ant clean && ant test && ant systemtest
