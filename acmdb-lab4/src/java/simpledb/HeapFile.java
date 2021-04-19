@@ -147,9 +147,11 @@ public class HeapFile implements DbFile {
     	private final TransactionId tid;
     	private Iterator<Tuple> tupleIterInPage;
     	private int pagePos;
+    	private final int numPages;
 
     	public HeapFileIterator(TransactionId tid){
 			this.tid = tid;
+			this.numPages = numPages();
 		}
 
 		public Iterator<Tuple> getTupleIterInPage(HeapPageId pid) throws TransactionAbortedException, DbException {
@@ -168,7 +170,7 @@ public class HeapFile implements DbFile {
 		public boolean hasNext() throws DbException, TransactionAbortedException {
     		if(tupleIterInPage == null) return false;
 			if(tupleIterInPage.hasNext()) return true;
-			while(pagePos + 1 < numPages()){
+			while(pagePos + 1 < numPages){
 				tupleIterInPage = getTupleIterInPage(new HeapPageId(getId(), ++pagePos));
 				if(tupleIterInPage.hasNext()){
 					return true;

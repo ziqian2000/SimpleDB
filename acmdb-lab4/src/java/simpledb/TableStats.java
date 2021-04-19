@@ -71,6 +71,8 @@ public class TableStats {
     private int numTuples;
     private int numPages;
     private HashMap<Integer, Object> histograms;
+	private HashMap<Integer, Integer> minVal;
+	private HashMap<Integer, Integer> maxVal;
 
     /**
      * Create a new TableStats object, that keeps track of statistics on each
@@ -98,41 +100,54 @@ public class TableStats {
 		DbFileIterator iter = dbFile.iterator(new TransactionId());
 		this.numPages = dbFile.numPages();
 		this.histograms = new HashMap<>();
+		this.minVal = new HashMap<>();
+		this.maxVal = new HashMap<>();
 
 		try {
-			iter.open();
-			while(iter.hasNext()){
-				numTuples++;
-				iter.next();
-			}
-			iter.rewind();
 			for(int i = 0; i < tupleDesc.numFields(); i++){
 				if(tupleDesc.getFieldType(i) == Type.INT_TYPE){
-					int minVal = Integer.MAX_VALUE, maxVal = Integer.MIN_VALUE;
-					while(iter.hasNext()){
-						int val = ((IntField) iter.next().getField(i)).getValue();
-						minVal = Math.min(minVal, val);
-						maxVal = Math.max(maxVal, val);
+					minVal.put(i, Integer.MAX_VALUE);
+					maxVal.put(i, Integer.MIN_VALUE);
+				}
+			}
+			iter.open();
+			while(iter.hasNext()){
+				Tuple tuple = iter.next();
+				numTuples++;
+				for(int i = 0; i < tupleDesc.numFields(); i++){
+					if(tupleDesc.getFieldType(i) == Type.INT_TYPE){
+						int val = ((IntField) tuple.getField(i)).getValue();
+						minVal.put(i, Math.min(minVal.get(i), val));
+						maxVal.put(i, Math.max(maxVal.get(i), val));
 					}
-					iter.rewind();
-					IntHistogram intHistogram = new IntHistogram(NUM_HIST_BINS, minVal, maxVal);
+				}
+			}
+			for(int i = 0; i < tupleDesc.numFields(); i++){
+				if(tupleDesc.getFieldType(i) == Type.INT_TYPE){
+					IntHistogram intHistogram = new IntHistogram(NUM_HIST_BINS, minVal.get(i), maxVal.get(i));
 					this.histograms.put(i, intHistogram);
-					while(iter.hasNext()){
-						intHistogram.addValue(((IntField) iter.next().getField(i)).getValue());
-					}
-					iter.rewind();
 				}
 				else if(tupleDesc.getFieldType(i) == Type.STRING_TYPE){
 					StringHistogram stringHistogram = new StringHistogram(NUM_HIST_BINS);
 					this.histograms.put(i, stringHistogram);
-					while(iter.hasNext()){
-						stringHistogram.addValue(((StringField) iter.next().getField(i)).getValue());
+				}
+			}
+			iter.rewind();
+			while(iter.hasNext()){
+				Tuple tuple = iter.next();
+				for(int i = 0; i < tupleDesc.numFields(); i++){
+					if(tupleDesc.getFieldType(i) == Type.INT_TYPE){
+						((IntHistogram)histograms.get(i)).addValue(((IntField) tuple.getField(i)).getValue());
 					}
-					iter.rewind();
+					else if(tupleDesc.getFieldType(i) == Type.STRING_TYPE){
+						((StringHistogram)histograms.get(i)).addValue(((StringField) tuple.getField(i)).getValue());
+					}
 				}
 			}
 			iter.close();
-		} catch (TransactionAbortedException | DbException ignored) {}
+		} catch (Exception e){
+			e.printStackTrace();
+		}
 
 
 	}

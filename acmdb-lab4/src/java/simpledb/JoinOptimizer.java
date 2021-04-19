@@ -240,7 +240,7 @@ public class JoinOptimizer {
 				for(LogicalJoinNode ss : s){
 					CostCard costCard = computeCostAndCardOfSubplan(stats, filterSelectivities, ss, s, bestCost, planCache);
 					if(costCard != null){
-						assert costCard.cost < bestCost;
+						assert costCard.cost <= bestCost;
 						bestCost = costCard.cost;
 						bestCard = costCard.card;
 						bestPlan = costCard.plan;

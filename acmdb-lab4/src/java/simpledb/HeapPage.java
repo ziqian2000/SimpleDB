@@ -301,7 +301,7 @@ public class HeapPage implements Page {
     public int getNumEmptySlots() {
         // some code goes here
         int num = 0;
-        for(int i = 0; i < getNumTuples(); i++)
+        for(int i = 0; i < numSlots; i++)
         	if(!isSlotUsed(i))
         		num++;
 		return num;
@@ -338,10 +338,12 @@ public class HeapPage implements Page {
 
     	private int cur;
     	private int i;
+    	private int numEmptySlots = -1;
 
 		@Override
 		public boolean hasNext() {
-			return cur < getNumTuples() - getNumEmptySlots();
+			if(numEmptySlots == -1) numEmptySlots = getNumEmptySlots();
+			return cur < numSlots - numEmptySlots;
 		}
 
 		@Override
