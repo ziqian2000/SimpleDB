@@ -81,11 +81,13 @@ public class Join extends Operator {
 		super.open();
 		child1.open();
 		child2.open();
+
+		ArrayList<Tuple> arr2 = new ArrayList<>();
+		while (child2.hasNext()) arr2.add(child2.next());
+
 		while (child1.hasNext()){
-			child2.rewind();
 			Tuple tuple1 = child1.next();
-			while (child2.hasNext()){
-				Tuple tuple2 = child2.next();
+			for(Tuple tuple2 : arr2){
 				if (predicate.filter(tuple1, tuple2)){
 					Tuple joinedTuple = new Tuple(joinedTupleDesc);
 					for(int i = 0; i < lenTuple1; i++) joinedTuple.setField(i, tuple1.getField(i));

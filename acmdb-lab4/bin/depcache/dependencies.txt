@@ -994,7 +994,9 @@ java.lang.String
 simpledb.TupleDesc
 java.lang.reflect.Method
 java.io.PrintStream
+java.lang.invoke.MethodHandles$Lookup
 java.util.Iterator
+java.lang.invoke.MethodHandles
 [Ljava.lang.Class;
 simpledb.Aggregator$Op
 simpledb.Filter
@@ -1009,9 +1011,10 @@ simpledb.Aggregate
 simpledb.OrderBy
 simpledb.Aggregator
 [Lsimpledb.DbIterator;
-java.lang.StringBuilder
 java.lang.Object
 java.lang.Class
+java.lang.StringBuilder
+java.lang.invoke.StringConcatFactory
 simpledb.TupleDesc$TDItem
 ||:simpledb.systemtest.HashEquiJoinTest
 simpledb.systemtest.SimpleDbTestBase
@@ -1077,8 +1080,10 @@ simpledb.TupleDesc
 simpledb.PlanCache
 javax.swing.tree.DefaultTreeCellRenderer
 java.io.PrintStream
+java.lang.invoke.MethodHandles$Lookup
 java.util.Iterator
 simpledb.LogicalJoinNode
+java.lang.invoke.MethodHandles
 java.util.Set
 simpledb.LogicalPlan
 javax.swing.JTree
@@ -1089,9 +1094,9 @@ javax.swing.JScrollPane
 simpledb.Predicate$Op
 simpledb.JoinOptimizer
 javax.swing.JLabel
-java.lang.StringBuilder
 java.lang.Object
 java.lang.Class
+java.lang.invoke.StringConcatFactory
 javax.swing.WindowConstants
 ||:simpledb.HashEquiJoin
 simpledb.DbIterator
