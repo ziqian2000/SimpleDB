@@ -1,8 +1,5 @@
 package simpledb;
 
-import sun.java2d.marlin.stats.Histogram;
-
-import javax.xml.crypto.Data;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
