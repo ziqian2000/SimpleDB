@@ -21,3 +21,5 @@ jobs:
       run: export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8 && cd acmdb-lab2 && ant clean && ant test && ant systemtest
     - name: Run test and system test for lab3
       run: export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8 && cd acmdb-lab3 && ant clean && ant test && ant systemtest
+    - name: Run test and system test for lab4
+      run: export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8 && cd acmdb-lab4 && ant clean && ant test && ant systemtest

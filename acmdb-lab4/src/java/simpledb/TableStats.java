@@ -1,5 +1,8 @@
 package simpledb;
 
+import sun.java2d.marlin.stats.Histogram;
+
+import javax.xml.crypto.Data;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -66,6 +69,12 @@ public class TableStats {
      */
     static final int NUM_HIST_BINS = 100;
 
+    private int ioCostPerPage;
+    private int tableid;
+    private int numTuples;
+    private int numPages;
+    private HashMap<Integer, Object> histograms;
+
     /**
      * Create a new TableStats object, that keeps track of statistics on each
      * column of a table
@@ -85,7 +94,51 @@ public class TableStats {
         // necessarily have to (for example) do everything
         // in a single scan of the table.
         // some code goes here
-    }
+		this.tableid = tableid;
+		this.ioCostPerPage = ioCostPerPage;
+		TupleDesc tupleDesc = Database.getCatalog().getTupleDesc(tableid);
+		DbFile dbFile = Database.getCatalog().getDatabaseFile(tableid);
+		DbFileIterator iter = dbFile.iterator(new TransactionId());
+		this.numPages = dbFile.numPages();
+		this.histograms = new HashMap<>();
+
+		try {
+			iter.open();
+			while(iter.hasNext()){
+				numTuples++;
+				iter.next();
+			}
+			iter.rewind();
+			for(int i = 0; i < tupleDesc.numFields(); i++){
+				if(tupleDesc.getFieldType(i) == Type.INT_TYPE){
+					int minVal = Integer.MAX_VALUE, maxVal = Integer.MIN_VALUE;
+					while(iter.hasNext()){
+						int val = ((IntField) iter.next().getField(i)).getValue();
+						minVal = Math.min(minVal, val);
+						maxVal = Math.max(maxVal, val);
+					}
+					iter.rewind();
+					IntHistogram intHistogram = new IntHistogram(NUM_HIST_BINS, minVal, maxVal);
+					this.histograms.put(i, intHistogram);
+					while(iter.hasNext()){
+						intHistogram.addValue(((IntField) iter.next().getField(i)).getValue());
+					}
+					iter.rewind();
+				}
+				else if(tupleDesc.getFieldType(i) == Type.STRING_TYPE){
+					StringHistogram stringHistogram = new StringHistogram(NUM_HIST_BINS);
+					this.histograms.put(i, stringHistogram);
+					while(iter.hasNext()){
+						stringHistogram.addValue(((StringField) iter.next().getField(i)).getValue());
+					}
+					iter.rewind();
+				}
+			}
+			iter.close();
+		} catch (TransactionAbortedException | DbException ignored) {}
+
+
+	}
 
     /**
      * Estimates the cost of sequentially scanning the file, given that the cost
@@ -101,7 +154,7 @@ public class TableStats {
      */
     public double estimateScanCost() {
         // some code goes here
-        return 0;
+        return ioCostPerPage * numPages;
     }
 
     /**
@@ -115,7 +168,7 @@ public class TableStats {
      */
     public int estimateTableCardinality(double selectivityFactor) {
         // some code goes here
-        return 0;
+        return (int) (numTuples * selectivityFactor);
     }
 
     /**
@@ -148,7 +201,12 @@ public class TableStats {
      */
     public double estimateSelectivity(int field, Predicate.Op op, Field constant) {
         // some code goes here
-        return 1.0;
+        assert histograms.containsKey(field);
+        Object histogram = histograms.get(field);
+        if(histogram instanceof IntHistogram)
+        	return ((IntHistogram) histogram).estimateSelectivity(op, ((IntField)constant).getValue());
+        else
+        	return ((StringHistogram) histogram).estimateSelectivity(op, ((StringField) constant).getValue());
     }
 
     /**
@@ -156,7 +214,7 @@ public class TableStats {
      * */
     public int totalTuples() {
         // some code goes here
-        return 0;
+        return numTuples;
     }
 
 }
