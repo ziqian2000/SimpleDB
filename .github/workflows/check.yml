@@ -13,11 +13,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up JDK
-      uses: actions/setup-java@v2
-      with:
-        java-version: '8'
-        distribution: 'adopt'
     - name: Install dependency
       run: sudo apt update && sudo apt install openjdk-8-jdk && sudo apt install ant
     - name: Run test and system test for lab1
@@ -26,5 +21,3 @@ jobs:
       run: export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8 && cd acmdb-lab2 && ant clean && ant test && ant systemtest
     - name: Run test and system test for lab3
       run: export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8 && cd acmdb-lab3 && ant clean && ant test && ant systemtest
-    - name: Run test and system test for lab4
-      run: export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8 && cd acmdb-lab4 && ant clean && ant test && ant systemtest
