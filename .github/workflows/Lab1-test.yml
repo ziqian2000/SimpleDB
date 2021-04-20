@@ -1,0 +1,17 @@
+name: Lab1 test
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-16.04
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependency
+      run: sudo apt update && sudo apt install openjdk-8-jdk && sudo apt install ant
+    - name: Run test and system test for lab1
+      run: export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8 && cd acmdb-lab1 && ant clean && ant test && ant systemtest
