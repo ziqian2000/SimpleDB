@@ -28,7 +28,7 @@ public class BufferPool {
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
 
-    private int pageNum;
+    private final int pageNum;
     private final HashMap<PageId, Page> pid2page;
     private final LinkedList<PageId> lruList;
     private final LockManager lockManager;
@@ -168,7 +168,7 @@ public class BufferPool {
      * @param tableId the table to add the tuple to
      * @param t the tuple to add
      */
-    public synchronized void insertTuple(TransactionId tid, int tableId, Tuple t)
+    public void insertTuple(TransactionId tid, int tableId, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
@@ -176,17 +176,18 @@ public class BufferPool {
 		DbFile file = Database.getCatalog().getDatabaseFile(tableId);
 		ArrayList<Page> dirtyPages = file.insertTuple(tid, t);
 
-		for(Page page : dirtyPages){
+		synchronized (this) {
+			for (Page page : dirtyPages) {
 
-			PageId pid = page.getId();
-			if(pid2page.containsKey(pid))
-				lruList.remove(pid);
-			else
-				if(lruList.size() >= pageNum) evictPage();
-			lruList.addLast(pid);
-			pid2page.put(pid, page);
+				PageId pid = page.getId();
+				if (pid2page.containsKey(pid))
+					lruList.remove(pid);
+				else if (lruList.size() >= pageNum) evictPage();
+				lruList.addLast(pid);
+				pid2page.put(pid, page);
 
-			page.markDirty(true, tid);
+				page.markDirty(true, tid);
+			}
 		}
 
     }
@@ -204,7 +205,7 @@ public class BufferPool {
      * @param tid the transaction deleting the tuple.
      * @param t the tuple to delete
      */
-    public synchronized void deleteTuple(TransactionId tid, Tuple t)
+    public void deleteTuple(TransactionId tid, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
@@ -212,17 +213,18 @@ public class BufferPool {
 		DbFile file = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
 		ArrayList<Page> dirtyPages = file.deleteTuple(tid, t);
 
-		for(Page page : dirtyPages){
+		synchronized (this) {
+			for (Page page : dirtyPages) {
 
-			PageId pid = page.getId();
-			if(pid2page.containsKey(pid))
-				lruList.remove(pid);
-			else
-			if(lruList.size() >= pageNum) evictPage();
-			lruList.addLast(pid);
-			pid2page.put(pid, page);
+				PageId pid = page.getId();
+				if (pid2page.containsKey(pid))
+					lruList.remove(pid);
+				else if (lruList.size() >= pageNum) evictPage();
+				lruList.addLast(pid);
+				pid2page.put(pid, page);
 
-			page.markDirty(true, tid);
+				page.markDirty(true, tid);
+			}
 		}
 
     }

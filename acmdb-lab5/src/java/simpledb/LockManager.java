@@ -12,8 +12,8 @@ enum LockType{
 
 public class LockManager {
 
-	public final int WAITING_TIME_LIMIT = 500; // waits for XXX ms
-	public final int WAITING_INTERVAL = 50;
+	public final int WAITING_TIME_LIMIT = 200; // waits for XXX ms
+	public final int WAITING_INTERVAL = WAITING_TIME_LIMIT + 50;
 
 	private final Map<PageId, Lock> pid2Lock;
 	private final Map<TransactionId, Set<Lock>> tid2LockSet;
@@ -42,7 +42,8 @@ public class LockManager {
 					lock.toExclusiveTidSet.add(tid);
 					break;
 				}
-				if(System.currentTimeMillis() > endWaitingTime) throw new TransactionAbortedException();
+				if(System.currentTimeMillis() > endWaitingTime)
+					throw new TransactionAbortedException();
 				try{wait(WAITING_INTERVAL);} catch (Exception e) {throw new TransactionAbortedException();}
 			}
 			lock.exclusiveLockTidSet.add(tid);
@@ -56,7 +57,8 @@ public class LockManager {
 					lock.toSharedTidSet.add(tid);
 					break;
 				}
-				if(System.currentTimeMillis() > endWaitingTime) throw new TransactionAbortedException();
+				if(System.currentTimeMillis() > endWaitingTime)
+					throw new TransactionAbortedException();
 				try{wait(WAITING_INTERVAL);} catch (Exception e) {throw new TransactionAbortedException();}
 			}
 			lock.sharedLockTidSet.add(tid);
