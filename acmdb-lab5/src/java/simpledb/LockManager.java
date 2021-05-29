@@ -12,8 +12,8 @@ enum LockType{
 
 public class LockManager {
 
-	public final int WAITING_TIME_LIMIT = 200; // waits for XXX ms
-	public final int WAITING_INTERVAL = WAITING_TIME_LIMIT + 50;
+	public final int WAITING_TIME_LIMIT = 100; // waits for XXX ms
+	public final int WAITING_INTERVAL = WAITING_TIME_LIMIT;
 
 	private final Map<PageId, Lock> pid2Lock;
 	private final Map<TransactionId, Set<Lock>> tid2LockSet;
@@ -37,7 +37,7 @@ public class LockManager {
 			while(true){
 				if(lock.sharedLockTidSet.isEmpty() && lock.exclusiveLockTidSet.isEmpty()) break;
 				if(lock.exclusiveLockTidSet.contains(tid)) break;
-				if(lock.sharedLockTidSet.contains(tid) && lock.sharedLockTidSet.size() == 1){
+				if(lock.sharedLockTidSet.size() == 1 && lock.sharedLockTidSet.contains(tid)){
 					lock.sharedLockTidSet.remove(tid);
 					lock.toExclusiveTidSet.add(tid);
 					break;
@@ -70,9 +70,12 @@ public class LockManager {
 	public synchronized void releaseLock(TransactionId tid, PageId pid){
 		Lock lock = pid2Lock.get(pid);
 
+//		if(lock.exclusiveLockTidSet.contains(tid)) lock.exclusiveLockTidSet.remove(tid);
+//		else if(lock.sharedLockTidSet.contains(tid)) lock.sharedLockTidSet.remove(tid);
+//		else assert false;
+
 		if(lock.exclusiveLockTidSet.contains(tid)) lock.exclusiveLockTidSet.remove(tid);
-		else if(lock.sharedLockTidSet.contains(tid)) lock.sharedLockTidSet.remove(tid);
-		else assert false;
+		else lock.sharedLockTidSet.remove(tid);
 
 		tid2LockSet.get(tid).remove(lock);
 		notifyAll();
@@ -102,7 +105,7 @@ public class LockManager {
 		return resPageId;
 	}
 
-	public synchronized boolean holdsLock(TransactionId tid, PageId pid){
+	public boolean holdsLock(TransactionId tid, PageId pid){
 		Lock lock = pid2Lock.get(pid);
 		return lock.exclusiveLockTidSet.contains(tid) || lock.sharedLockTidSet.contains(tid);
 	}
