@@ -3,6 +3,7 @@ package simpledb;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 
 /**
@@ -269,7 +270,20 @@ public class BufferPool {
     private synchronized  void evictPage() throws DbException {
         // some code goes here
         // not necessary for lab1
-		PageId pageIdToEvict = lruList.pollFirst();
+
+//		PageId pageIdToEvict = lruList.pollFirst();
+
+		Iterator<PageId> iter = lruList.iterator();
+		PageId pageIdToEvict = null;
+		while(iter.hasNext()){
+			PageId pageId = iter.next();
+			if(pid2page.get(pageId).isDirty() == null){ // not dirty
+				pageIdToEvict = pageId;
+				break;
+			}
+		}
+		if(pageIdToEvict == null) throw new DbException("No clean page to evict.");
+
 		try {
 			flushPage(pageIdToEvict);
 		}catch (IOException e){
