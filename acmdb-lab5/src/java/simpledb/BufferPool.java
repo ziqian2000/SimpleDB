@@ -122,6 +122,7 @@ public class BufferPool {
     public void transactionComplete(TransactionId tid) throws IOException {
         // some code goes here
         // not necessary for lab1|lab2
+		transactionComplete(tid, true);
     }
 
     /** Return true if the specified transaction has a lock on the specified page */
@@ -142,6 +143,13 @@ public class BufferPool {
         throws IOException {
         // some code goes here
         // not necessary for lab1|lab2
+		if(commit) flushPages(tid);
+		else { // abort
+			for(PageId pageId : lockManager.getExclusiveLockedPageIds(tid))
+				discardPage(pageId);
+		}
+
+		lockManager.releaseAllLocks(tid);
     }
 
     /**
@@ -241,6 +249,12 @@ public class BufferPool {
     public synchronized void discardPage(PageId pid) {
         // some code goes here
         // not necessary for lab1
+		if(pid2page.containsKey(pid)){
+			Page pageToDiscard = pid2page.get(pid);
+			pageToDiscard.markDirty(false, null);
+			lruList.remove(pid);
+			pid2page.remove(pid);
+		}
     }
 
     /**
@@ -250,10 +264,12 @@ public class BufferPool {
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
         // not necessary for lab1
-		Page pageToFlush = pid2page.get(pid);
-		DbFile table = Database.getCatalog().getDatabaseFile(pid.getTableId());
-		table.writePage(pageToFlush);
-		pageToFlush.markDirty(false, null);
+		if(pid2page.containsKey(pid)) {
+			Page pageToFlush = pid2page.get(pid);
+			DbFile table = Database.getCatalog().getDatabaseFile(pid.getTableId());
+			table.writePage(pageToFlush);
+			pageToFlush.markDirty(false, null);
+		}
     }
 
     /** Write all pages of the specified transaction to disk.
@@ -261,6 +277,8 @@ public class BufferPool {
     public synchronized  void flushPages(TransactionId tid) throws IOException {
         // some code goes here
         // not necessary for lab1|lab2
+		for(PageId pageId : lockManager.getExclusiveLockedPageIds(tid))
+			flushPage(pageId);
     }
 
     /**
@@ -289,6 +307,7 @@ public class BufferPool {
 		}catch (IOException e){
 			e.printStackTrace();
 		}
+		lruList.remove(pageIdToEvict);
 		pid2page.remove(pageIdToEvict);
     }
 

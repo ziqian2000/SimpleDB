@@ -37,6 +37,7 @@ public class LockManager {
 				if(lock.exclusiveLockTidSet.contains(tid)) break;
 				if(lock.exclusiveLockTidSet.isEmpty() && lock.sharedLockTidSet.contains(tid) && lock.sharedLockTidSet.size() == 1){
 					lock.sharedLockTidSet.remove(tid);
+					lock.toExclusiveTidSet.add(tid);
 					break;
 				}
 				if(System.currentTimeMillis() > endWaitingTime) throw new TransactionAbortedException();
@@ -50,6 +51,7 @@ public class LockManager {
 				if(lock.exclusiveLockTidSet.isEmpty()) break;
 				if(lock.exclusiveLockTidSet.contains(tid)){
 					lock.exclusiveLockTidSet.remove(tid);
+					lock.toSharedTidSet.add(tid);
 					break;
 				}
 				if(System.currentTimeMillis() > endWaitingTime) throw new TransactionAbortedException();
@@ -67,6 +69,26 @@ public class LockManager {
 
 		tid2LockSet.get(tid).remove(lock);
 		notifyAll();
+	}
+
+	public synchronized void releaseAllLocks(TransactionId tid){
+		Set<Lock> lockSet = new HashSet<>(tid2LockSet.get(tid));
+		for(Lock lock : lockSet){
+			releaseLock(tid, lock.pageId);
+		}
+		notifyAll();
+	}
+
+	/**
+	 * Get all pages that were ever exclusively locked by tid.
+	 */
+	public Set<PageId> getExclusiveLockedPageIds(TransactionId tid){
+		Set<PageId> resPageId = new HashSet<>();
+		for(Lock lock : tid2LockSet.get(tid)){
+			if(lock.exclusiveLockTidSet.contains(tid) || lock.toSharedTidSet.contains(tid))
+				resPageId.add(lock.pageId);
+		}
+		return resPageId;
 	}
 
 	public boolean holdsLock(TransactionId tid, PageId pid){
