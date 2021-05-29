@@ -30,6 +30,7 @@ public class BufferPool {
     private int pageNum;
     private final HashMap<PageId, Page> pid2page;
     private final LinkedList<PageId> lruList;
+    private final LockManager lockManager;
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -41,7 +42,8 @@ public class BufferPool {
 		pid2page = new HashMap<>();
 		lruList = new LinkedList<>();
 		pageNum = numPages;
-    }
+		lockManager = new LockManager();
+	}
     
     public static int getPageSize() {
       return pageSize;
@@ -75,6 +77,12 @@ public class BufferPool {
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
+
+		if(perm == Permissions.READ_ONLY)
+			lockManager.acquireLock(tid, pid, LockType.SHARED);
+		else
+			lockManager.acquireLock(tid, pid, LockType.EXCLUSIVE);
+
         if(pid2page.containsKey(pid)){
         	lruList.remove(pid);
         	lruList.addLast(pid);
@@ -102,6 +110,7 @@ public class BufferPool {
     public  void releasePage(TransactionId tid, PageId pid) {
         // some code goes here
         // not necessary for lab1|lab2
+		lockManager.releaseLock(tid, pid);
     }
 
     /**
@@ -118,7 +127,7 @@ public class BufferPool {
     public boolean holdsLock(TransactionId tid, PageId p) {
         // some code goes here
         // not necessary for lab1|lab2
-        return false;
+        return lockManager.holdsLock(tid, p);
     }
 
     /**
