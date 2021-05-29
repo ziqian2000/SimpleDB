@@ -12,11 +12,11 @@ enum LockType{
 
 public class LockManager {
 
-	public final int WAITING_TIME_LIMIT = 500; // waits for
+	public final int WAITING_TIME_LIMIT = 500; // waits for XXX ms
 	public final int WAITING_INTERVAL = 50;
 
-	private Map<PageId, Lock> pid2Lock;
-	private Map<TransactionId, Set<Lock>> tid2LockSet;
+	private final Map<PageId, Lock> pid2Lock;
+	private final Map<TransactionId, Set<Lock>> tid2LockSet;
 
 	public LockManager(){
 		pid2Lock = new HashMap<>();
