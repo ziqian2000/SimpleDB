@@ -84,18 +84,19 @@ public class BufferPool {
 		else
 			lockManager.acquireLock(tid, pid, LockType.EXCLUSIVE);
 
-        if(pid2page.containsKey(pid)){
-        	lruList.remove(pid);
-        	lruList.addLast(pid);
-        	return pid2page.get(pid);
-		}
-        else{
-        	DbFile tableFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
-        	Page newPage = tableFile.readPage(pid);
-        	if(lruList.size() >= pageNum) evictPage();
-        	lruList.addLast(pid);
-        	pid2page.put(pid, newPage);
-        	return newPage;
+		synchronized (this) {
+			if (pid2page.containsKey(pid)) {
+				lruList.remove(pid);
+				lruList.addLast(pid);
+				return pid2page.get(pid);
+			} else {
+				DbFile tableFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
+				Page newPage = tableFile.readPage(pid);
+				if (lruList.size() >= pageNum) evictPage();
+				lruList.addLast(pid);
+				pid2page.put(pid, newPage);
+				return newPage;
+			}
 		}
     }
 
@@ -167,7 +168,7 @@ public class BufferPool {
      * @param tableId the table to add the tuple to
      * @param t the tuple to add
      */
-    public void insertTuple(TransactionId tid, int tableId, Tuple t)
+    public synchronized void insertTuple(TransactionId tid, int tableId, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
@@ -203,7 +204,7 @@ public class BufferPool {
      * @param tid the transaction deleting the tuple.
      * @param t the tuple to delete
      */
-    public  void deleteTuple(TransactionId tid, Tuple t)
+    public synchronized void deleteTuple(TransactionId tid, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
@@ -249,7 +250,7 @@ public class BufferPool {
     public synchronized void discardPage(PageId pid) {
         // some code goes here
         // not necessary for lab1
-		if(pid2page.containsKey(pid)){
+		if(pid2page.containsKey(pid)){ // may have been evicted if not dirty
 			Page pageToDiscard = pid2page.get(pid);
 			pageToDiscard.markDirty(false, null);
 			lruList.remove(pid);
@@ -274,7 +275,7 @@ public class BufferPool {
 
     /** Write all pages of the specified transaction to disk.
      */
-    public synchronized  void flushPages(TransactionId tid) throws IOException {
+    public synchronized void flushPages(TransactionId tid) throws IOException {
         // some code goes here
         // not necessary for lab1|lab2
 		for(PageId pageId : lockManager.getExclusiveLockedPageIds(tid))
@@ -294,7 +295,7 @@ public class BufferPool {
 		Iterator<PageId> iter = lruList.iterator();
 		PageId pageIdToEvict = null;
 		while(iter.hasNext()){
-			PageId pageId = iter.next();
+			PageId pageId = iter.next(); // concurrent modification exception may occur
 			if(pid2page.get(pageId).isDirty() == null){ // not dirty
 				pageIdToEvict = pageId;
 				break;

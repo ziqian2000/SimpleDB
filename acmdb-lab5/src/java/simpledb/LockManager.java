@@ -30,7 +30,6 @@ public class LockManager {
 
 		Lock lock = pid2Lock.computeIfAbsent(pid, Lock::new);
 		Set<Lock> lockSet = tid2LockSet.computeIfAbsent(tid, key -> new HashSet<>());
-		lockSet.add(lock);
 
 		long endWaitingTime = System.currentTimeMillis() + WAITING_TIME_LIMIT;
 
@@ -38,7 +37,7 @@ public class LockManager {
 			while(true){
 				if(lock.sharedLockTidSet.isEmpty() && lock.exclusiveLockTidSet.isEmpty()) break;
 				if(lock.exclusiveLockTidSet.contains(tid)) break;
-				if(lock.exclusiveLockTidSet.isEmpty() && lock.sharedLockTidSet.contains(tid) && lock.sharedLockTidSet.size() == 1){
+				if(lock.sharedLockTidSet.contains(tid) && lock.sharedLockTidSet.size() == 1){
 					lock.sharedLockTidSet.remove(tid);
 					lock.toExclusiveTidSet.add(tid);
 					break;
@@ -62,13 +61,16 @@ public class LockManager {
 			}
 			lock.sharedLockTidSet.add(tid);
 		}
+
+		lockSet.add(lock);
 	}
 
 	public synchronized void releaseLock(TransactionId tid, PageId pid){
 		Lock lock = pid2Lock.get(pid);
 
 		if(lock.exclusiveLockTidSet.contains(tid)) lock.exclusiveLockTidSet.remove(tid);
-		else lock.sharedLockTidSet.remove(tid);
+		else if(lock.sharedLockTidSet.contains(tid)) lock.sharedLockTidSet.remove(tid);
+		else assert false;
 
 		tid2LockSet.get(tid).remove(lock);
 		notifyAll();
@@ -80,8 +82,8 @@ public class LockManager {
 			for (Lock lock : lockSet) {
 				releaseLock(tid, lock.pageId);
 			}
-			notifyAll();
 		}
+		notifyAll();
 	}
 
 	/**
