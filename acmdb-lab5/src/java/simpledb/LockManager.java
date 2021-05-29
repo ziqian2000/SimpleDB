@@ -12,8 +12,8 @@ enum LockType{
 
 public class LockManager {
 
-	public final int WAITING_TIME_LIMIT = 300; // waits for at most 300 ms
-//	public final int WAITING_INTERVAL = 50;
+	public final int WAITING_TIME_LIMIT = 500; // waits for
+	public final int WAITING_INTERVAL = 50;
 
 	private Map<PageId, Lock> pid2Lock;
 	private Map<TransactionId, Set<Lock>> tid2LockSet;
@@ -25,6 +25,9 @@ public class LockManager {
 
 	public synchronized void acquireLock(TransactionId tid, PageId pid, LockType lockType)
 			throws TransactionAbortedException {
+
+//		lockType = LockType.EXCLUSIVE; // XXX
+
 		Lock lock = pid2Lock.computeIfAbsent(pid, Lock::new);
 		Set<Lock> lockSet = tid2LockSet.computeIfAbsent(tid, key -> new HashSet<>());
 		lockSet.add(lock);
@@ -41,7 +44,7 @@ public class LockManager {
 					break;
 				}
 				if(System.currentTimeMillis() > endWaitingTime) throw new TransactionAbortedException();
-				try{wait(WAITING_TIME_LIMIT);} catch (Exception e) {throw new TransactionAbortedException();}
+				try{wait(WAITING_INTERVAL);} catch (Exception e) {throw new TransactionAbortedException();}
 			}
 			lock.exclusiveLockTidSet.add(tid);
 		}
@@ -55,7 +58,7 @@ public class LockManager {
 					break;
 				}
 				if(System.currentTimeMillis() > endWaitingTime) throw new TransactionAbortedException();
-				try{wait(WAITING_TIME_LIMIT);} catch (Exception e) {throw new TransactionAbortedException();}
+				try{wait(WAITING_INTERVAL);} catch (Exception e) {throw new TransactionAbortedException();}
 			}
 			lock.sharedLockTidSet.add(tid);
 		}
@@ -72,26 +75,30 @@ public class LockManager {
 	}
 
 	public synchronized void releaseAllLocks(TransactionId tid){
-		Set<Lock> lockSet = new HashSet<>(tid2LockSet.get(tid));
-		for(Lock lock : lockSet){
-			releaseLock(tid, lock.pageId);
+		if(tid2LockSet.containsKey(tid)) {
+			Set<Lock> lockSet = new HashSet<>(tid2LockSet.get(tid));
+			for (Lock lock : lockSet) {
+				releaseLock(tid, lock.pageId);
+			}
+			notifyAll();
 		}
-		notifyAll();
 	}
 
 	/**
 	 * Get all pages that were ever exclusively locked by tid.
 	 */
-	public Set<PageId> getExclusiveLockedPageIds(TransactionId tid){
+	public synchronized Set<PageId> getExclusiveLockedPageIds(TransactionId tid){
 		Set<PageId> resPageId = new HashSet<>();
-		for(Lock lock : tid2LockSet.get(tid)){
-			if(lock.exclusiveLockTidSet.contains(tid) || lock.toSharedTidSet.contains(tid))
-				resPageId.add(lock.pageId);
+		if(tid2LockSet.containsKey(tid)) {
+			for (Lock lock : tid2LockSet.get(tid)) {
+				if (lock.exclusiveLockTidSet.contains(tid) || lock.toSharedTidSet.contains(tid))
+					resPageId.add(lock.pageId);
+			}
 		}
 		return resPageId;
 	}
 
-	public boolean holdsLock(TransactionId tid, PageId pid){
+	public synchronized boolean holdsLock(TransactionId tid, PageId pid){
 		Lock lock = pid2Lock.get(pid);
 		return lock.exclusiveLockTidSet.contains(tid) || lock.sharedLockTidSet.contains(tid);
 	}
