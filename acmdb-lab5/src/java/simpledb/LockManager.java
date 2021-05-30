@@ -1,9 +1,6 @@
 package simpledb;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 enum LockType{
 	SHARED,
@@ -12,8 +9,8 @@ enum LockType{
 
 public class LockManager {
 
-	public final int WAITING_TIME_LIMIT = 100; // waits for XXX ms
-	public final int WAITING_INTERVAL = WAITING_TIME_LIMIT;
+	public final int WAITING_TIME_LIMIT = 500; // waits for XXX ms
+	public final int WAITING_INTERVAL = 50;
 
 	private final Map<PageId, Lock> pid2Lock;
 	private final Map<TransactionId, Set<Lock>> tid2LockSet;
@@ -42,10 +39,16 @@ public class LockManager {
 					lock.toExclusiveTidSet.add(tid);
 					break;
 				}
-				if(System.currentTimeMillis() > endWaitingTime)
+				if(System.currentTimeMillis() > endWaitingTime) {
+//					System.out.println(tid + " times out for exclusive locks on " + pid);
 					throw new TransactionAbortedException();
-				try{wait(WAITING_INTERVAL);} catch (Exception e) {throw new TransactionAbortedException();}
+				}
+				try{
+					wait(WAITING_INTERVAL);
+//					System.out.println(tid + " is waiting for exclusive locks on " + pid);
+				} catch (Exception e) {throw new TransactionAbortedException();}
 			}
+//			System.out.println(tid + " acquires the exclusive lock on " + pid);
 			lock.exclusiveLockTidSet.add(tid);
 		}
 
@@ -57,10 +60,16 @@ public class LockManager {
 					lock.toSharedTidSet.add(tid);
 					break;
 				}
-				if(System.currentTimeMillis() > endWaitingTime)
+				if(System.currentTimeMillis() > endWaitingTime) {
+//					System.out.println(tid + " times out for shared locks on " + pid);
 					throw new TransactionAbortedException();
-				try{wait(WAITING_INTERVAL);} catch (Exception e) {throw new TransactionAbortedException();}
+				}
+				try{
+					wait(WAITING_INTERVAL);
+//					System.out.println(tid + " is waiting for shared locks on " + pid);
+				} catch (Exception e) {throw new TransactionAbortedException();}
 			}
+//			System.out.println(tid + " acquires the shared lock on " + pid);
 			lock.sharedLockTidSet.add(tid);
 		}
 
@@ -70,12 +79,18 @@ public class LockManager {
 	public synchronized void releaseLock(TransactionId tid, PageId pid){
 		Lock lock = pid2Lock.get(pid);
 
-//		if(lock.exclusiveLockTidSet.contains(tid)) lock.exclusiveLockTidSet.remove(tid);
-//		else if(lock.sharedLockTidSet.contains(tid)) lock.sharedLockTidSet.remove(tid);
-//		else assert false;
+		if(lock.exclusiveLockTidSet.contains(tid)) {
+			lock.exclusiveLockTidSet.remove(tid);
+//			System.out.println(tid + " releases the shared lock on " + pid);
+		}
+		else if(lock.sharedLockTidSet.contains(tid)) {
+			lock.sharedLockTidSet.remove(tid);
+//			System.out.println(tid + " releases the shared lock on " + pid);
+		}
+		else assert false;
 
-		if(lock.exclusiveLockTidSet.contains(tid)) lock.exclusiveLockTidSet.remove(tid);
-		else lock.sharedLockTidSet.remove(tid);
+//		if(lock.exclusiveLockTidSet.contains(tid)) lock.exclusiveLockTidSet.remove(tid);
+//		else lock.sharedLockTidSet.remove(tid);
 
 		tid2LockSet.get(tid).remove(lock);
 		notifyAll();

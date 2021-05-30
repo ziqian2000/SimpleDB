@@ -174,9 +174,9 @@ public class BufferPool {
         // not necessary for lab1
 
 		DbFile file = Database.getCatalog().getDatabaseFile(tableId);
+		ArrayList<Page> dirtyPages = file.insertTuple(tid, t);
 
 		synchronized (this) {
-			ArrayList<Page> dirtyPages = file.insertTuple(tid, t);
 			for (Page page : dirtyPages) {
 
 				PageId pid = page.getId();
@@ -211,9 +211,9 @@ public class BufferPool {
         // not necessary for lab1
 
 		DbFile file = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
+		ArrayList<Page> dirtyPages = file.deleteTuple(tid, t);
 
 		synchronized (this) {
-			ArrayList<Page> dirtyPages = file.deleteTuple(tid, t);
 			for (Page page : dirtyPages) {
 
 				PageId pid = page.getId();
