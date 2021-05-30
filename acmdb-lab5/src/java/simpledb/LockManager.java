@@ -11,6 +11,7 @@ public class LockManager {
 
 	public final int WAITING_TIME_LIMIT = 500; // waits for XXX ms
 	public final int WAITING_INTERVAL = 50;
+	public final Random randomGenerator = new Random();
 
 	private final Map<PageId, Lock> pid2Lock;
 	private final Map<TransactionId, Set<Lock>> tid2LockSet;
@@ -28,7 +29,7 @@ public class LockManager {
 		Lock lock = pid2Lock.computeIfAbsent(pid, Lock::new);
 		Set<Lock> lockSet = tid2LockSet.computeIfAbsent(tid, key -> new HashSet<>());
 
-		long endWaitingTime = System.currentTimeMillis() + WAITING_TIME_LIMIT;
+		long endWaitingTime = System.currentTimeMillis() + WAITING_TIME_LIMIT + this.randomGenerator.nextInt(WAITING_TIME_LIMIT);
 
 		if(lockType == LockType.EXCLUSIVE){
 			while(true){
